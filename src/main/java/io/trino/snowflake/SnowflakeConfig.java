@@ -55,7 +55,7 @@ public class SnowflakeConfig
     @Config("snowflake.warehouse")
     public SnowflakeConfig setWarehouse(String warehouse)
     {
-        this.warehouse = this.warehouse;
+        this.warehouse = warehouse;
         return this;
     }
 

@@ -19,6 +19,7 @@ import io.trino.plugin.jdbc.BaseJdbcConfig;
 import io.trino.plugin.jdbc.ColumnMapping;
 import io.trino.plugin.jdbc.ConnectionFactory;
 import io.trino.plugin.jdbc.JdbcExpression;
+import io.trino.plugin.jdbc.JdbcSplit;
 import io.trino.plugin.jdbc.JdbcTypeHandle;
 import io.trino.plugin.jdbc.WriteMapping;
 import io.trino.plugin.jdbc.expression.AggregateFunctionRewriter;
@@ -108,10 +109,18 @@ public class SnowflakeClient
     private final Type jsonType;
     private final AggregateFunctionRewriter aggregateFunctionRewriter;
 
+    @Override
+    public Connection getConnection(ConnectorSession session, JdbcSplit split)
+            throws SQLException
+    {
+        Connection connection = connectionFactory.openConnection(session);
+        return connection;
+    }
+
     @Inject
     public SnowflakeClient(BaseJdbcConfig config, ConnectionFactory connectionFactory, TypeManager typeManager)
     {
-        super(config, "`", connectionFactory);
+        super(config, "\"", connectionFactory);
         this.jsonType = typeManager.getType(new TypeSignature(StandardTypes.JSON));
 
         JdbcTypeHandle bigintTypeHandle = new JdbcTypeHandle(Types.BIGINT, Optional.of("bigint"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
