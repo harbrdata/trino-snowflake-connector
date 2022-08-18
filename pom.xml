@@ -6,19 +6,19 @@
     <parent>
         <groupId>io.trino</groupId>
         <artifactId>trino-root</artifactId>
-        <version>356</version>
+        <version>367</version>
     </parent>
 
     <groupId>io.trino</groupId>
     <artifactId>trino-snowflake</artifactId>
-    <version>356</version>
+    <version>367</version>
     <description>Trino Snowflake Connector</description>
     <!--    <packaging>jar</packaging>-->
     <packaging>trino-plugin</packaging>
 
     <properties>
         <air.main.basedir>${project.basedir}</air.main.basedir>
-        <dep.log4j.version>2.17.1</dep.log4j.version>
+<!--        <dep.log4j.version>2.17.1</dep.log4j.version>-->
     </properties>
 
     <dependencies>
@@ -82,19 +82,19 @@
             <scope>runtime</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-            <version>${dep.log4j.version}</version>
-            <scope>runtime</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.logging.log4j</groupId>-->
+<!--            <artifactId>log4j-api</artifactId>-->
+<!--            <version>${dep.log4j.version}</version>-->
+<!--            <scope>runtime</scope>-->
+<!--        </dependency>-->
 
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${dep.log4j.version}</version>
-            <scope>runtime</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.logging.log4j</groupId>-->
+<!--            <artifactId>log4j-core</artifactId>-->
+<!--            <version>${dep.log4j.version}</version>-->
+<!--            <scope>runtime</scope>-->
+<!--        </dependency>-->
 
         <!-- trino SPI -->
         <dependency>
@@ -183,7 +183,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
 

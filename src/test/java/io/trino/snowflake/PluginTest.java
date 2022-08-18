@@ -22,7 +22,7 @@ import java.util.Map;
 public class PluginTest
 {
     @Test
-    public void TestDependencyInjection()
+    public void testDependencyInjection()
     {
         SnowflakePlugin plugin = new SnowflakePlugin();
         Iterable<io.trino.spi.connector.ConnectorFactory> factories = plugin.getConnectorFactories();
