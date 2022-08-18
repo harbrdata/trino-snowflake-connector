@@ -33,7 +33,7 @@ public class PluginTest
                 put("connection-url", "jdbc:snowflake://xc95956.eu-west-1.snowflakecomputing.com");
                 put("snowflake.passcodeInPassword", "false");
                 put("connection-user", "eng");
-                put("connection-password", "SdEY6j6Gr:hTa2w");
+                put("connection-password", "pw");
                 put("snowflake.database", "SNOWFLAKE_SAMPLE_DATA");
             }
         };
