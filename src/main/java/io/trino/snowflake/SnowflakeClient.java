@@ -174,8 +174,7 @@ public class SnowflakeClient
             return mapping;
         }
         log.info("MAPPING STEP 1");
-
-
+        
         Optional<ColumnMapping> unsignedMapping = getUnsignedMapping(typeHandle);
         if (unsignedMapping.isPresent()) {
             return unsignedMapping;
