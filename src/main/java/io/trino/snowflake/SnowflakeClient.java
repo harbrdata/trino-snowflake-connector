@@ -14,6 +14,7 @@
 package io.trino.snowflake;
 
 import com.google.common.collect.ImmutableSet;
+import io.airlift.log.Logger;
 import io.trino.plugin.base.expression.AggregateFunctionRewriter;
 import io.trino.plugin.base.expression.AggregateFunctionRule;
 import io.trino.plugin.jdbc.BaseJdbcClient;
@@ -118,6 +119,8 @@ import static java.lang.String.format;
 public class SnowflakeClient
         extends BaseJdbcClient
 {
+    private static final Logger log = Logger.get(SnowflakeClient.class);
+
     private final Type jsonType;
     private final AggregateFunctionRewriter aggregateFunctionRewriter;
 
@@ -164,6 +167,7 @@ public class SnowflakeClient
     {
         String jdbcTypeName = typeHandle.getJdbcTypeName()
                 .orElseThrow(() -> new TrinoException(JDBC_ERROR, "Type name is missing: " + typeHandle));
+        log.info("MAPPING TYPE %s", jdbcTypeName);
 
         Optional<ColumnMapping> mapping = getForcedMappingToVarchar(typeHandle);
         if (mapping.isPresent()) {
