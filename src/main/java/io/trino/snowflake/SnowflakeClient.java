@@ -167,25 +167,26 @@ public class SnowflakeClient
     {
         String jdbcTypeName = typeHandle.getJdbcTypeName()
                 .orElseThrow(() -> new TrinoException(JDBC_ERROR, "Type name is missing: " + typeHandle));
-        log.info("MAPPING TYPE %s", jdbcTypeName);
+        log.info("JDBC MAPPING TYPE: %s", jdbcTypeName);
 
         Optional<ColumnMapping> mapping = getForcedMappingToVarchar(typeHandle);
         if (mapping.isPresent()) {
             return mapping;
         }
-        log.info("MAPPING STEP 1");
-        
+
         Optional<ColumnMapping> unsignedMapping = getUnsignedMapping(typeHandle);
         if (unsignedMapping.isPresent()) {
             return unsignedMapping;
         }
 
-        log.info("MAPPING STEP 2");
         if (jdbcTypeName.equalsIgnoreCase("json")) {
             return Optional.of(jsonColumnMapping());
         }
 
-        log.info("MAPPING STEP 3");
+        if (jdbcTypeName.equalsIgnoreCase("variant")) {
+            return Optional.of(jsonColumnMapping());
+        }
+
         switch (typeHandle.getJdbcType()) {
             case Types.TINYINT:
                 return Optional.of(tinyintColumnMapping());
@@ -241,17 +242,14 @@ public class SnowflakeClient
                 // TODO support higher precisions (https://github.com/trinodb/trino/issues/6910)
                 break; // currently handled by the default mappings
         }
-        log.info("MAPPING STEP 4");
 
         Optional<ColumnMapping> connectorMapping = legacyDefaultColumnMapping(typeHandle);
         if (connectorMapping.isPresent()) {
             return connectorMapping;
         }
-        log.info("MAPPING STEP 5");
         if (getUnsupportedTypeHandling(session) == CONVERT_TO_VARCHAR) {
             return mapToUnboundedVarchar(typeHandle);
         }
-        log.info("MAPPING STEP 6");
         return Optional.empty();
         // TODO add explicit mappings
 //        return legacyToPrestoType(session, connection, typeHandle);
