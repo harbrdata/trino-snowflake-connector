@@ -51,6 +51,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -180,11 +181,8 @@ public class SnowflakeClient
             return unsignedMapping;
         }
 
-        Set<String> snowflakeSemiStructuredTypes = Set.of(
-                "json", "variant", "object", "array"
-        );
-
-        if (snowflakeSemiStructuredTypes.contains(jdbcTypeName)) {
+        Set<String> snowflakeSemiStructuredTypes = Set.of("json", "variant", "object", "array");
+        if (snowflakeSemiStructuredTypes.contains(jdbcTypeName.toLowerCase(Locale.ENGLISH))) {
             return Optional.of(jsonColumnMapping());
         }
 
