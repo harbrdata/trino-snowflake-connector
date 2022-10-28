@@ -13,6 +13,7 @@
  */
 package io.trino.snowflake;
 
+import io.trino.spi.connector.Connector;
 import io.trino.testing.TestingConnectorContext;
 import org.junit.Test;
 
@@ -37,6 +38,7 @@ public class PluginTest
                 put("snowflake.database", "SNOWFLAKE_SAMPLE_DATA");
             }
         };
-        f.create("test", conf, new TestingConnectorContext());
+        Connector conn = f.create("test", conf, new TestingConnectorContext());
+        conn.getTableProperties();
     }
 }

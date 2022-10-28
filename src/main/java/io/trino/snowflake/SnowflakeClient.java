@@ -23,6 +23,7 @@ import io.trino.plugin.jdbc.ColumnMapping;
 import io.trino.plugin.jdbc.ConnectionFactory;
 import io.trino.plugin.jdbc.JdbcExpression;
 import io.trino.plugin.jdbc.JdbcSplit;
+import io.trino.plugin.jdbc.JdbcTableHandle;
 import io.trino.plugin.jdbc.JdbcTypeHandle;
 import io.trino.plugin.jdbc.WriteMapping;
 import io.trino.plugin.jdbc.expression.ImplementAvgDecimal;
@@ -36,6 +37,7 @@ import io.trino.spi.TrinoException;
 import io.trino.spi.connector.AggregateFunction;
 import io.trino.spi.connector.ColumnHandle;
 import io.trino.spi.connector.ConnectorSession;
+import io.trino.spi.connector.SchemaTableName;
 import io.trino.spi.type.CharType;
 import io.trino.spi.type.DecimalType;
 import io.trino.spi.type.Decimals;
@@ -135,7 +137,7 @@ public class SnowflakeClient
     }
 
     @Inject
-    public SnowflakeClient(BaseJdbcConfig config, ConnectionFactory connectionFactory, TypeManager typeManager, IdentifierMapping identifierMapping)
+    public SnowflakeClient(BaseJdbcConfig config, ConnectionFactory connectionFactory, TypeManager typeManager, @SnowflakeIdentifierMappingModule.ForSnowflakeIdentifierMapping IdentifierMapping identifierMapping)
     {
         super(config, "\"", connectionFactory, identifierMapping);
         this.jsonType = typeManager.getType(new TypeSignature(StandardTypes.JSON));
@@ -156,6 +158,31 @@ public class SnowflakeClient
     }
 
     @Override
+    public Optional<JdbcTableHandle> getTableHandle(ConnectorSession session, SchemaTableName schemaTableName)
+    {
+        // Trigger identity mapping for all tables to ensure we have a cache of remote identifiers on the IdentityMapper.
+        triggerRemoteSchemaTableMapping(session);
+        return super.getTableHandle(session, schemaTableName);
+    }
+
+    private void triggerRemoteSchemaTableMapping(ConnectorSession session)
+    {
+        try (Connection connection = super.connectionFactory.openConnection(session)) {
+            ResultSet resultSet = super.getTables(connection, Optional.empty(), Optional.empty());
+            IdentifierMapping identifierMapping = getIdentifierMapping();
+
+            while (resultSet.next()) {
+                String remoteSchema = resultSet.getString("TABLE_SCHEM");
+                String remoteTable = resultSet.getString("TABLE_NAME");
+                identifierMapping.fromRemoteTableName(remoteSchema, remoteTable);
+            }
+        }
+        catch (SQLException e) {
+            throw new TrinoException(JDBC_ERROR, e);
+        }
+    }
+
+    @Override
     public void abortReadConnection(Connection connection, ResultSet resultSet)
             throws SQLException
     {
@@ -170,7 +197,8 @@ public class SnowflakeClient
         String jdbcTypeName = typeHandle.getJdbcTypeName()
                 .orElseThrow(() -> new TrinoException(JDBC_ERROR, "Type name is missing: " + typeHandle));
         log.info("JDBC MAPPING TYPE: %s", jdbcTypeName);
-
+        log.info("JDBC col size: %s", typeHandle.getColumnSize());
+        log.info("JDBC get type: %d", typeHandle.getJdbcType());
         Optional<ColumnMapping> mapping = getForcedMappingToVarchar(typeHandle);
         if (mapping.isPresent()) {
             return mapping;

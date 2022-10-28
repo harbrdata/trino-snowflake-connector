@@ -61,7 +61,7 @@ public class SnowflakeClientModule
         connectionProperties.setProperty("useInformationSchema", Boolean.toString(snowflakeConfig.isDriverUseInformationSchema()));
         connectionProperties.setProperty("nullCatalogMeansCurrent", "false");
         connectionProperties.setProperty("useUnicode", "true");
-        connectionProperties.setProperty("characterEncoding", "utf8");
+        connectionProperties.setProperty("  characterEncoding", "utf8");
         connectionProperties.setProperty("tinyInt1isBit", "false");
         if (snowflakeConfig.getWarehouse() != null) {
             connectionProperties.setProperty("warehouse", snowflakeConfig.getWarehouse());
@@ -121,5 +121,6 @@ public class SnowflakeClientModule
         configBinder(binder).bindConfig(SnowflakeConfig.class);
         configBinder(binder).bindConfig(DecimalConfig.class);
         binder.install(new DecimalModule());
+        binder.install(new SnowflakeIdentifierMappingModule());
     }
 }
