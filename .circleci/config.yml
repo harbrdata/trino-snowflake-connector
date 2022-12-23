@@ -1,0 +1,27 @@
+version: '2.1'
+orbs:
+  maven: circleci/maven@1.4.0
+
+executors:
+  mvn-11:
+    docker:
+      - image: 'cimg/openjdk:11.0'
+jobs:
+  build:
+    executor: mvn-11
+    steps:
+      - checkout
+      - maven/with_cache:
+          steps:
+            - run:
+                command: "mvn -B package --file pom.xml"
+      - run:
+          command: |
+            mkdir -p /tmp/generated-artifacts
+            cp target/trino-snowflake-*.zip /tmp/generated-artifacts
+      - store_artifacts:
+          path: /tmp/generated-artifacts/
+workflows:
+  build_and_archive:
+    jobs:
+      - build
