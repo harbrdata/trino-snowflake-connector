@@ -2,6 +2,7 @@ version: '2.1'
 orbs:
   gh: circleci/github-cli@2.1.1
   maven: circleci/maven@1.4.0
+  node: circleci/node@5.0
   slack: circleci/slack@4.12.0
 
 executors:
@@ -102,6 +103,12 @@ commands:
           mentions_failure: '@here'
 
 jobs:
+  semantic-release:
+    executor: node/default
+    steps:
+      - checkout
+      - run: npm install @semantic-release/exec @semantic-release/git @semantic-release/changelog semantic-release-slack-bot -D
+      - run: npx semantic-release
   build:
     executor: mvn-11
     steps:
@@ -138,6 +145,19 @@ jobs:
                 environment_type: gcp
 
 workflows:
+  release:
+    jobs:
+      - semantic-release:
+          filters:
+            branches:
+              only:
+                - main
+          context:
+            - github-developers-robot
+            # to choose the right slack webhook context please see https://harbrgroup.atlassian.net/wiki/spaces/DEV/pages/2243657729/Semantic+Release+setup
+            #  slack-webhook-platform-changelogs-internal for #platform-changelogs-internal channel
+            #  slack-webhook-platform-changelogs for #platform-changelogs channel
+            - slack-webhook-platform-changelogs-services
   build_and_archive:
     jobs:
       - build:
