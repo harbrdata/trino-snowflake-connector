@@ -57,7 +57,7 @@ commands:
             echo "export branch_name=$branch_name" >> $BASH_ENV
             git clone https://${GITHUB_TOKEN}@github.com/harbrdata/<< parameters.target_repository >>.git target_repo_<< parameters.environment_type >>
       - run:
-          name: Copy generated files into new branch << parameters.target_branch >>
+          name: Copy generated files into new branch << parameters.target_branch >> (<< parameters.target_repository >>)
           command: |
             cd target_repo_<< parameters.environment_type >>/<< parameters.target_path >>
             # Create the branch if it doesn't exist in origin
@@ -66,7 +66,7 @@ commands:
             cp /tmp/generated-artifacts/trino-snowflake-*.zip .
             git add --all
       - run:
-          name: Push changes to << parameters.target_branch >>
+          name: Push changes to << parameters.target_branch >> (<< parameters.target_repository >>)
           command: |
             cd target_repo_<< parameters.environment_type >>/<< parameters.target_path >>
             if [ -n "$(git status --porcelain)" ]; then
@@ -116,8 +116,10 @@ jobs:
       - maven/with_cache:
           steps:
             - run:
+                name: "Maven package"
                 command: "mvn -B package --file pom.xml"
       - run:
+          name: Copy files to /tmp/generated-artifacts
           command: |
             mkdir -p /tmp/generated-artifacts
             cp target/trino-snowflake-*.zip /tmp/generated-artifacts
