@@ -126,8 +126,8 @@ jobs:
       - store_artifacts:
           path: /tmp/generated-artifacts/
       - when:
-        condition:
-          equal: [ dev, << pipeline.git.branch >> ]
+          condition:
+            equal: [ dev, << pipeline.git.branch >> ]
           steps:
             - push-artifacts:
                 target_repository: gcp-remote-installer
@@ -140,8 +140,8 @@ jobs:
                 target_path: artifacts_buckets/aws/dev/remote/env/bootstrap/applications
                 environment_type: aws
       - when:
-        condition:
-          equal: [ main, << pipeline.git.branch >> ]
+          condition:
+            equal: [ main, << pipeline.git.branch >> ]
           steps:
             - push-artifacts:
                 target_repository: gcp-remote-installer
