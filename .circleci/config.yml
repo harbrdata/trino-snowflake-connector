@@ -134,6 +134,11 @@ jobs:
                 target_branch: dev
                 target_path: services/spaces/runtime_artifacts
                 environment_type: gcp
+            - push-artifacts:
+                target_repository: spaces_core
+                target_branch: dev
+                target_path: artifacts_buckets/aws/dev/remote/env/bootstrap/applications
+                environment_type: aws
       - when:
         condition:
           equal: [ main, << pipeline.git.branch >> ]
@@ -143,6 +148,11 @@ jobs:
                 target_branch: trino-snowflake-connector
                 target_path: services/spaces/runtime_artifacts
                 environment_type: gcp
+            - push-artifacts:
+                target_repository: spaces_core
+                target_branch: trino-snowflake-connector
+                target_path: artifacts_buckets/aws/dev/remote/env/bootstrap/applications
+                environment_type: aws
 
 workflows:
   release:
