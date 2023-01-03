@@ -25,6 +25,7 @@ import io.trino.plugin.jdbc.JdbcExpression;
 import io.trino.plugin.jdbc.JdbcSplit;
 import io.trino.plugin.jdbc.JdbcTableHandle;
 import io.trino.plugin.jdbc.JdbcTypeHandle;
+import io.trino.plugin.jdbc.LongReadFunction;
 import io.trino.plugin.jdbc.WriteMapping;
 import io.trino.plugin.jdbc.expression.ImplementAvgDecimal;
 import io.trino.plugin.jdbc.expression.ImplementAvgFloatingPoint;
@@ -50,6 +51,7 @@ import io.trino.spi.type.VarcharType;
 import javax.inject.Inject;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -75,7 +77,6 @@ import static io.trino.plugin.jdbc.StandardColumnMappings.bigintWriteFunction;
 import static io.trino.plugin.jdbc.StandardColumnMappings.booleanColumnMapping;
 import static io.trino.plugin.jdbc.StandardColumnMappings.booleanWriteFunction;
 import static io.trino.plugin.jdbc.StandardColumnMappings.charWriteFunction;
-import static io.trino.plugin.jdbc.StandardColumnMappings.dateColumnMappingUsingLocalDate;
 import static io.trino.plugin.jdbc.StandardColumnMappings.dateWriteFunctionUsingLocalDate;
 import static io.trino.plugin.jdbc.StandardColumnMappings.dateWriteFunctionUsingSqlDate;
 import static io.trino.plugin.jdbc.StandardColumnMappings.decimalColumnMapping;
@@ -153,7 +154,7 @@ public class SnowflakeClient
                         .add(new ImplementSum(SnowflakeClient::toTypeHandle))
                         .add(new ImplementAvgFloatingPoint())
                         .add(new ImplementAvgDecimal())
-                        // .add(new ImplementAvgBigint())
+                        .add(new ImplementAvgBigint())
                         .build());
     }
 
@@ -225,6 +226,11 @@ public class SnowflakeClient
                 return Optional.of(integerColumnMapping());
 
             case Types.BIGINT:
+                int maxBigIntDigits = 18;
+                int bigIntDigits = typeHandle.getColumnSize().orElse(maxBigIntDigits);
+                if (bigIntDigits > maxBigIntDigits) {
+                    return Optional.of(decimalColumnMapping(createDecimalType(bigIntDigits, 0)));
+                }
                 return Optional.of(bigintColumnMapping());
 
             case Types.REAL:
@@ -278,8 +284,6 @@ public class SnowflakeClient
             return mapToUnboundedVarchar(typeHandle);
         }
         return Optional.empty();
-        // TODO add explicit mappings
-//        return legacyToPrestoType(session, connection, typeHandle);
     }
 
     public static Optional<ColumnMapping> legacyDefaultColumnMapping(JdbcTypeHandle typeHandle)
@@ -534,5 +538,38 @@ public class SnowflakeClient
         }
 
         return Optional.empty();
+    }
+
+    public static ColumnMapping dateColumnMappingUsingLocalDate()
+    {
+        return ColumnMapping.longMapping(
+                DATE,
+                dateReadFunctionUsingLocalDate(),
+                dateWriteFunctionUsingLocalDate());
+    }
+
+    public static LongReadFunction dateReadFunctionUsingLocalDate()
+    {
+        return new LongReadFunction() {
+            @Override
+            public boolean isNull(ResultSet resultSet, int columnIndex)
+                    throws SQLException
+            {
+                // 'ResultSet.getObject' without class name may throw an exception
+                // e.g. in MySQL driver, rs.getObject(int) throws for dates between Oct 5 and 14, 1582
+                Date date = resultSet.getDate(columnIndex);
+                if (date != null) {
+                    date.toLocalDate();
+                }
+                return resultSet.wasNull();
+            }
+
+            @Override
+            public long readLong(ResultSet resultSet, int columnIndex)
+                    throws SQLException
+            {
+                return resultSet.getDate(columnIndex).toLocalDate().toEpochDay();
+            }
+        };
     }
 }

@@ -39,7 +39,7 @@ public class SnowflakeConfig
     //encrypted Private Key
     private String privateKey;
     private String passcode;
-    private Boolean passcodeInPassword;
+    private Boolean passcodeInPassword = false;
     private String privateKeyFile;
     private String privateKeyFilePassword;
     private String vaultUrl;
