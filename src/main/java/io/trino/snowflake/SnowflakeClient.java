@@ -25,7 +25,6 @@ import io.trino.plugin.jdbc.JdbcExpression;
 import io.trino.plugin.jdbc.JdbcSplit;
 import io.trino.plugin.jdbc.JdbcTableHandle;
 import io.trino.plugin.jdbc.JdbcTypeHandle;
-import io.trino.plugin.jdbc.LongReadFunction;
 import io.trino.plugin.jdbc.WriteMapping;
 import io.trino.plugin.jdbc.expression.ImplementAvgDecimal;
 import io.trino.plugin.jdbc.expression.ImplementAvgFloatingPoint;
@@ -51,7 +50,6 @@ import io.trino.spi.type.VarcharType;
 import javax.inject.Inject;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -77,7 +75,7 @@ import static io.trino.plugin.jdbc.StandardColumnMappings.bigintWriteFunction;
 import static io.trino.plugin.jdbc.StandardColumnMappings.booleanColumnMapping;
 import static io.trino.plugin.jdbc.StandardColumnMappings.booleanWriteFunction;
 import static io.trino.plugin.jdbc.StandardColumnMappings.charWriteFunction;
-import static io.trino.plugin.jdbc.StandardColumnMappings.dateWriteFunctionUsingLocalDate;
+import static io.trino.plugin.jdbc.StandardColumnMappings.dateReadFunctionUsingSqlDate;
 import static io.trino.plugin.jdbc.StandardColumnMappings.dateWriteFunctionUsingSqlDate;
 import static io.trino.plugin.jdbc.StandardColumnMappings.decimalColumnMapping;
 import static io.trino.plugin.jdbc.StandardColumnMappings.defaultCharColumnMapping;
@@ -269,7 +267,7 @@ public class SnowflakeClient
                 return Optional.of(ColumnMapping.sliceMapping(VARBINARY, varbinaryReadFunction(), varbinaryWriteFunction(), FULL_PUSHDOWN));
 
             case Types.DATE:
-                return Optional.of(dateColumnMappingUsingLocalDate());
+                return Optional.of(dateColumnMapping());
 
             case Types.TIMESTAMP:
                 // TODO support higher precisions (https://github.com/trinodb/trino/issues/6910)
@@ -337,7 +335,7 @@ public class SnowflakeClient
                 return Optional.of(varbinaryColumnMapping());
 
             case Types.DATE:
-                return Optional.of(dateColumnMappingUsingLocalDate());
+                return Optional.of(dateColumnMapping());
 
             case Types.TIME:
                 // TODO default to `timeColumnMapping`
@@ -382,7 +380,7 @@ public class SnowflakeClient
         }
 
         if (type == DATE) {
-            return WriteMapping.longMapping("date", dateWriteFunctionUsingLocalDate());
+            return WriteMapping.longMapping("date", dateWriteFunctionUsingSqlDate());
         }
 
         if (TIME_WITH_TIME_ZONE.equals(type) || TIMESTAMP_TZ_MILLIS.equals(type)) {
@@ -540,36 +538,11 @@ public class SnowflakeClient
         return Optional.empty();
     }
 
-    public static ColumnMapping dateColumnMappingUsingLocalDate()
+    public static ColumnMapping dateColumnMapping()
     {
         return ColumnMapping.longMapping(
                 DATE,
-                dateReadFunctionUsingLocalDate(),
-                dateWriteFunctionUsingLocalDate());
-    }
-
-    public static LongReadFunction dateReadFunctionUsingLocalDate()
-    {
-        return new LongReadFunction() {
-            @Override
-            public boolean isNull(ResultSet resultSet, int columnIndex)
-                    throws SQLException
-            {
-                // 'ResultSet.getObject' without class name may throw an exception
-                // e.g. in MySQL driver, rs.getObject(int) throws for dates between Oct 5 and 14, 1582
-                Date date = resultSet.getDate(columnIndex);
-                if (date != null) {
-                    date.toLocalDate();
-                }
-                return resultSet.wasNull();
-            }
-
-            @Override
-            public long readLong(ResultSet resultSet, int columnIndex)
-                    throws SQLException
-            {
-                return resultSet.getDate(columnIndex).toLocalDate().toEpochDay();
-            }
-        };
+                dateReadFunctionUsingSqlDate(),
+                dateWriteFunctionUsingSqlDate());
     }
 }
