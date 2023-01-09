@@ -1,0 +1,41 @@
+{
+  "branches": [
+    "main"
+  ],
+  "tagFormat": "${version}",
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md"
+      }
+    ],
+    [
+      "semantic-release-slack-bot",
+      {
+        "markdownReleaseNotes": true,
+        "notifyOnSuccess": true,
+        "notifyOnFail": false,
+        "packageName": "trino-snowflake-connector"
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "echo ${nextRelease.version} > VERSION"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "CHANGELOG.md",
+          "VERSION"
+        ]
+      }
+    ],
+    "@semantic-release/github"
+  ]
+}
