@@ -1,6 +1,5 @@
 version: '2.1'
 orbs:
-  gh: circleci/github-cli@2.1.1
   maven: circleci/maven@1.4.0
   node: circleci/node@5.0
   slack: circleci/slack@4.12.0
@@ -49,7 +48,6 @@ commands:
         type: enum
         enum: ["aws", "gcp"]
     steps:
-      - gh/install
       - run:
           name: Clone << parameters.target_repository >> repository
           command: |
@@ -76,25 +74,6 @@ commands:
               git config user.name "CircleCI Job [${CIRCLE_PROJECT_REPONAME}]"
               git commit -m "Automated commit from ${CIRCLE_PROJECT_REPONAME} ${CIRCLE_SHA1} to update trino-snowflake.zip files"
               git push --set-upstream origin HEAD
-
-              if [ "$branch_name" == "trino-snowflake-connector" ]; then
-                # Handle PR
-                if pr_number=$(gh pr view "$branch_name" --json number -q '.number') ; then
-                  echo "Existing PR ${pr_number}"
-                  comment="PR updated by [CircleCI](${CIRCLE_BUILD_URL}) from ${CIRCLE_PROJECT_REPONAME} ([${CIRCLE_SHA1}](https://github.com/harbrdata/${CIRCLE_PROJECT_REPONAME}/commit/${CIRCLE_SHA1})). This commit was triggered by @${CIRCLE_USERNAME}"
-                  gh pr comment $pr_number --body "$comment" --repo "harbrdata/<< parameters.target_repository >>"
-                  gh pr edit $pr_number --repo "harbrdata/<< parameters.target_repository >>" --add-assignee "${CIRCLE_USERNAME}"
-                else
-                  echo "There is no existing PR for branch $branch_name"
-                  title="${CIRCLE_PROJECT_REPONAME}: ${gcp_remote_installer_version}"
-                  body="PR raised from ${CIRCLE_PROJECT_REPONAME} ([${CIRCLE_SHA1}](https://github.com/harbrdata/${CIRCLE_PROJECT_REPONAME}/commit/${CIRCLE_SHA1})) with trino-snowflake-connector changes. This PR was triggered by @${CIRCLE_USERNAME}. See [changelog](https://github.com/harbrdata/${CIRCLE_PROJECT_REPONAME}/blob/${CIRCLE_BRANCH}/CHANGELOG.md) for more info"
-                  gh pr create --title "$title" --draft --body "$body" --head "$branch_name" --repo "harbrdata/<< parameters.target_repository >>" --assignee "@me,${CIRCLE_USERNAME}"
-                fi
-                echo "Please review the PR available here and mark it as ready for review when done"
-                gh pr view "$branch_name"
-              else
-                echo "Not raising a PR for branch $branch_name. Check the ${CIRCLE_PROJECT_REPONAME} $branch_name pipeline."
-              fi
             else
               echo "No changes to be committed"
             fi
