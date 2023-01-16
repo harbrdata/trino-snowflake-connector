@@ -13,11 +13,14 @@ The command above is executed on any branch, the generated artifact will appear 
   * **AWS**: Pushes the generated artifact to the right location on [`spaces_core`](https://github.com/harbrdata/spaces_core) `dev` branch.
 At the moment, this won't deploy to dev.
 
-* `main` branch:
-  * **GCP**: Pushes the generated artifact to the right location on [`gcp-remote-installer`](https://github.com/harbrdata/gcp-remote-installer)
-  `trino-snowflake-connector` branch, raises a PR on that repo to be reviewed. Once merged, it will get deployed into UAT.
-  * **AWS**: Pushes the generated artifact to the right location on [`spaces_core`](https://github.com/harbrdata/spaces_core) `trino-snowflake-connector` branch, raises a PR on that repo to be reviewed.
-At the moment, this won't deploy to dev.
+* `main` branch uploads the generated artifact as follows:
+  * `s3://harbr-deploy-artifacts/trino-snowflake-connector/latest/trino-snowflake-367.zip`
+  * `s3://harbr-deploy-artifacts/trino-snowflake-connector/main/trino-snowflake-367.zip`
+  * `s3://harbr-deploy-artifacts/trino-snowflake-connector/main/trino-snowflake-367-${VERSION}.zip` (where `VERSION` is the value of semantic version).
+  Please note, semantic version updates the value `VERSION` after uploading it.
+
+`s3://harbr-deploy-artifacts/trino-snowflake-connector/latest/trino-snowflake-367.zip` will be used by `spaces_core`
+and `gcp-remote-installer` to check the artifact and deploy it to AWS/GCP respectively.
 
 Slack notifications will trigger for `#build-remote-services-gcp` and `#build-remote-services-aws` channels.
 
