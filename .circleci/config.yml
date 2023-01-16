@@ -1,5 +1,7 @@
 version: '2.1'
 orbs:
+  aws-cli: circleci/aws-cli@2.0.3
+  aws-s3: circleci/aws-s3@3.1.1
   maven: circleci/maven@1.4.0
   node: circleci/node@5.0
   slack: circleci/slack@4.12.0
@@ -35,13 +37,13 @@ commands:
   push-artifacts:
     description: | 
       Places the artifacts in in the given repository, to trigger the target pipeline.
-      If the branch is "dev", it will push straight away, if it's trino-snowflake-connector, it will raise a PR.
+      If the branch is "dev", it will push straight away.
     parameters:
       target_repository:
         type: string
       target_branch:
         type: enum
-        enum: ["dev", "trino-snowflake-connector"]
+        enum: ["dev"]
       target_path:
         type: string
       environment_type:
@@ -80,6 +82,46 @@ commands:
       - notify-slack:
           channel: 'build-remote-services-<< parameters.environment_type >>'
           mentions_failure: '@here'
+  upload-to-s3:
+    description: Uploads the trino-snowflake-367-*.zip file to the S3 bucket
+    steps:
+      - aws-cli/setup:
+          aws-access-key-id: ACCESS_ID
+          aws-region: AWS_REGION
+          aws-secret-access-key: SECRET_KEY
+      - run:
+          name: Check if trino-snowflake-connector version exists
+          command: |
+            export versioned_artifact="trino-snowflake-367-$(cat VERSION).zip"
+            echo 'export versioned_artifact="${versioned_artifact}"' >> $BASH_ENV
+            cp /tmp/generated-artifacts/trino-snowflake-367.zip /tmp/generated-artifacts/${versioned_artifact}
+            # CircleCI runs with '-eo pipefail by default'. This doesn't let us evaluate error messages.
+            set +eo pipefail
+            if aws s3api head-object --bucket harbr-deploy-artifacts --key "trino-snowflake-connector/${CIRCLE_BRANCH}/${versioned_artifact}" 2>&1 | grep -q 'Not Found'; then
+              echo "Versioned artifact $versioned_artifact doesn't exist, it should be good to go with a new version"
+            else
+              echo "Object s3://harbr-deploy-artifacts/trino-snowflake-connector/${CIRCLE_BRANCH}/${versioned_artifact} already exists"
+              echo "Consider updating VERSION file"
+              exit 1
+            fi
+      - aws-s3/copy:
+          aws-access-key-id: ACCESS_ID
+          aws-secret-access-key: SECRET_KEY
+          aws-region: AWS_REGION
+          from: /tmp/generated-artifacts/trino-snowflake-367.zip
+          to: s3://harbr-deploy-artifacts/trino-snowflake-connector/latest/trino-snowflake-367.zip
+      - aws-s3/copy:
+          aws-access-key-id: ACCESS_ID
+          aws-secret-access-key: SECRET_KEY
+          aws-region: AWS_REGION
+          from: /tmp/generated-artifacts/trino-snowflake-367-*.zip
+          to: s3://harbr-deploy-artifacts/trino-snowflake-connector/${CIRCLE_BRANCH}/
+      - aws-s3/copy:
+          aws-access-key-id: ACCESS_ID
+          aws-secret-access-key: SECRET_KEY
+          aws-region: AWS_REGION
+          from: /tmp/generated-artifacts/trino-snowflake-367.zip
+          to: s3://harbr-deploy-artifacts/trino-snowflake-connector/${CIRCLE_BRANCH}/trino-snowflake-367.zip
 
 jobs:
   semantic-release:
@@ -108,7 +150,7 @@ jobs:
           path: /tmp/generated-artifacts/
       - when:
           condition:
-            equal: [ dev, << pipeline.git.branch >> ]
+            equal: [ "dev", << pipeline.git.branch >> ]
           steps:
             - push-artifacts:
                 target_repository: gcp-remote-installer
@@ -122,18 +164,9 @@ jobs:
                 environment_type: aws
       - when:
           condition:
-            equal: [ main, << pipeline.git.branch >> ]
+            equal: [ "main", << pipeline.git.branch >> ]
           steps:
-            - push-artifacts:
-                target_repository: gcp-remote-installer
-                target_branch: trino-snowflake-connector
-                target_path: services/spaces/runtime_artifacts
-                environment_type: gcp
-            - push-artifacts:
-                target_repository: spaces_core
-                target_branch: trino-snowflake-connector
-                target_path: artifacts_buckets/aws/dev/remote/env/bootstrap/applications
-                environment_type: aws
+            - upload-to-s3
 
 workflows:
   release:
@@ -153,5 +186,6 @@ workflows:
     jobs:
       - build:
           context:
+            - aws-credentials-global
             - github-developers-robot
             - slack
